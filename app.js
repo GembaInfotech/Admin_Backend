@@ -28,7 +28,7 @@ connect();
 app.use('/v1/api/queries', QueriesRoute);
 app.use('/v1/api/cityAdmin', cityAdminRoute);
 app.use('/v1/api/stateAdmin', stateAdminRoute);
-app.use('/v1/api', superAdminRoute);
+app.use('/v1/api/superAdmin', superAdminRoute);
 app.use('/v1/api/gte', gteRoute);
 
 app.listen(port, () => {
