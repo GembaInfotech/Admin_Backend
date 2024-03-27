@@ -13,7 +13,11 @@ import bcrypt from 'bcryptjs';
 const registerStateAdmin = async (req, res) => {
     try {
         // Extract registration data from request
-        const { name, mob, mail, add,city, state,  pc, region, regionCode, status, role, password } = req.body;
+        console.log(req.body);
+
+        const { name, mob, mail, add,city, state,  pc, region, regionCode, status, role, password } = req.body.values
+
+        // console.log(name, mob, mail, add,city, state,  pc, region, regionCode, status, role, password);
 
         // Check if required fields are provided
         if (!name || !mob || !mail || !add  ||!city || !state || !pc || !region || !regionCode || !status || !role || !password) {
@@ -24,9 +28,9 @@ const registerStateAdmin = async (req, res) => {
 
         // Check if user with the same email already exists
         const existingStateAdmin = await StateAdmin.findOne({ mail });
-        console.log("dffgjhkjghk......");
+        
         if (existingStateAdmin) {
-          console.log("testin...............2");
+          
             return res.status(400).json({ error: 'User with this email already exists' });
         }
 
@@ -53,7 +57,7 @@ const registerStateAdmin = async (req, res) => {
         await newStateAdmin.save();
 
         // Respond with success message
-        res.status(201).json({ message: 'State admin registered successfully' });
+        res.status(201).json({ message: 'State admin registered successfully', newStateAdmin });
     } catch (error) {
         // Handle any errors
         console.error('Registration error:', error);
