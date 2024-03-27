@@ -1,7 +1,9 @@
 import express from "express";
 const stateAdminRoute = express.Router();
 
-import { stateAdmin } from "../controller/stateAdminController.js";
-stateAdminRoute.get("/stateAdmin", stateAdmin);
+import { registerStateAdmin, getAllStateAdmins } from "../controller/stateAdminController.js";
+stateAdminRoute.post("/register", registerStateAdmin);
+stateAdminRoute.get("/getStateAdmin", getAllStateAdmins);
+
 
 export { stateAdminRoute };
