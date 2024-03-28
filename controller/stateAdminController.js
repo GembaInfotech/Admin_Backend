@@ -68,6 +68,7 @@ const registerStateAdmin = async (req, res) => {
 const getAllStateAdmins = async (req, res) => {
   try {
       const stateAdmins = await StateAdmin.find();
+      
       res.status(200).json(stateAdmins);
   } catch (error) {
       console.error('Error fetching state admins:', error);
@@ -75,4 +76,55 @@ const getAllStateAdmins = async (req, res) => {
   }
 };
 
-export { registerStateAdmin,getAllStateAdmins };
+
+const updateStateAdmin = async (req, res) => {
+    try {
+        // Extract update data from request
+        const { name, mob, mail, add, city, state, pc, region, regionCode, status, role, password } = req.body;
+
+        // Check if required fields are provided
+        if (!name || !mob || !mail || !add || !city || !state || !pc || !region || !regionCode || !status || !role || !password) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        // Find the state admin by email
+        const stateAdmin = await StateAdmin.findOne({ mail });
+
+        if (!stateAdmin) {
+            return res.status(404).json({ error: 'State admin not found' });
+        }
+
+        // Update state admin fields
+        stateAdmin.name = name;
+        stateAdmin.mob = mob;
+        stateAdmin.mail = mail;
+        stateAdmin.add = add;
+        stateAdmin.city = city;
+        stateAdmin.state = state;
+        stateAdmin.pc = pc;
+        stateAdmin.region = region;
+        stateAdmin.regionCode = regionCode;
+        stateAdmin.status = status;
+        stateAdmin.role = role;
+
+        // If password is provided, hash and update
+        if (password) {
+            stateAdmin.password = await bcrypt.hash(password, 10);
+        }
+
+        // Save updated state admin
+        await stateAdmin.save();
+
+        // Respond with success message
+        res.status(200).json({ message: 'State admin updated successfully', stateAdmin });
+    } catch (error) {
+        // Handle any errors
+        console.error('Update error:', error);
+        res.status(500).json({ error: 'An error occurred during update' });
+    }
+};
+
+
+
+
+export { registerStateAdmin,getAllStateAdmins, updateStateAdmin};
