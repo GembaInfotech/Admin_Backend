@@ -44,7 +44,7 @@ const stateAdminSchema = new Schema({
         type: String,
         required: true
     },
-    verificationToken: String,
+    // verificationToken: String,
     cityAdminRef: {
         type: Schema.Types.ObjectId,
         ref: 'CityAdmin'
