@@ -18,38 +18,36 @@ const stateAdminSchema = new Schema({
     },
     add: {
         type: String,
-        // required: true
     },
     city:{
         type:String,
     },
     state: {
         type: String,
-        // required: true
     },
     pc: {
         type: String,
-        // required: true
     },
     region: {
         type: String,
-        // required: true
     },
     regionCode: {
         type: String,
-        // required: true
     },
     status: {
         type: String,
-        // required: true
     },
     role: {
         type: String,
-        // required: true
     },
     password: {
         type: String,
         required: true
+    },
+    verificationToken: String,
+    cityAdminRef: {
+        type: Schema.Types.ObjectId,
+        ref: 'CityAdmin'
     }
 });
 

@@ -1,7 +1,8 @@
-import { Schema } from "mongoose";
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const AdminSchema = new Schema({
+const { Schema, model } = mongoose;
+
+const adminSchema = new Schema({
     name: {
         type: String,
         required: true
@@ -10,49 +11,46 @@ const AdminSchema = new Schema({
         type: String,
         required: true
     },
-    email: {
+    mail: {
         type: String,
         required: true,
         unique: true
     },
     add: {
         type: String,
-        required: true
     },
-    city: {
-        type: String,
-        required: true
+    city:{
+        type:String,
     },
     state: {
         type: String,
-        required: true
     },
     pc: {
         type: String,
-        required: true
     },
     region: {
         type: String,
-        required: true
     },
-    region_code: {
+    regionCode: {
         type: String,
-        required: true
     },
     status: {
         type: String,
-        required: true
     },
-    role: {
-        type: String,
-        required: true
-    },
+    // role: {
+    //     type: String,
+    // },
     password: {
         type: String,
+        required: true
+    },
+    verificationToken: String,
+    // Additional fields for differentiation
+    role: {
+        type: String,
+        enum: ['StateAdmin', 'CityAdmin', 'GTE'], // Define the possible admin types
         required: true
     }
 });
 
-
-
-export const Admin = mongoose.model("Admin", AdminSchema);
+export const Admin = model("Admin", adminSchema);

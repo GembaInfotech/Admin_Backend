@@ -1,7 +1,75 @@
 
 import { StateAdmin } from "../model/stateAdmin.js";
-
 import bcrypt from 'bcryptjs';
+import crypto from "crypto";
+
+import nodemailer from "nodemailer";
+// import { generateToken } from "../config/jwtTokens.js";
+// import { generateRefreshToken } from "../config/refreshToken.js";
+// import crypto from "crypto";
+
+
+const verify = async (req, res) => {
+    const token = req.params.token;
+    const user = await User.findOne({ verificationToken: token });
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired token" });
+    }
+    user.verified = true;
+    user.save();
+    // res.redirect("http://localhost:5173/login");
+  };
+
+const transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+      user: "ayushguptass14@gmail.com",
+      pass: "itcyffmwyptpjhbt",
+    },
+  });
+
+function sendVerificationEmail(newStateAdmin) {
+    // console.log("", newStateAdmin )
+    const mailOptions = {
+      from: "ayushguptass14@gmail.com",
+      to: newStateAdmin.mail,
+      subject: "Parkar-Verify Your Email",
+      html: `<!DOCTYPE html>
+      <html lang="en">
+      
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Account Verification</title>
+          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+      </head>
+      
+      <body class="bg-gray-100">
+          <div class="max-w-screen-lg mx-auto mt-8">
+              <!-- Content Section -->
+              <div class="bg-white shadow-md rounded-lg px-8 py-6 mt-8">
+                  <h1 class="text-gray-800 text-lg font-semibold">Hello ${newStateAdmin.name},</h1>
+                  <p class="text-gray-700 mt-2">Thank you for registering on our application. To ensure the security of your account, please click the link below to verify your email address:</p>
+                  <a href="http://localhost:7001/v1/api/User/token/${newStateAdmin.verificationToken}" class="mt-4 inline-block bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">Verify Account</a>
+                  <p class="text-gray-700 mt-2">If the above button does not work, you can copy and paste the following URL into your browser:</p>
+                  <p class="text-gray-700 mt-2">${"http://localhost:7002/v1/api/User/token/" + newStateAdmin.verificationToken}</p>
+                  <p class="text-gray-700 mt-2">Thank you for choosing to be a part of our community.</p>
+              </div>
+          </div>
+      </body>
+      
+      </html>
+        `,
+    };
+  
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log("Email sent: " + info.response);
+      }
+    });
+  }
 
 const registerStateAdmin = async (req, res) => {
     try {
@@ -19,7 +87,10 @@ const registerStateAdmin = async (req, res) => {
         if (existingStateAdminInState) {
             return res.json({ error:true });
         }
+
+        const verificationToken = crypto.randomBytes(20).toString("hex");
         const hashedPassword = await bcrypt.hash(password, 10);
+
         const newStateAdmin = new StateAdmin({
             name,
             mob,
@@ -32,8 +103,11 @@ const registerStateAdmin = async (req, res) => {
             regionCode,
             status,
             role,
-            password: hashedPassword 
+            password: hashedPassword,
+            verificationToken
         });
+
+        sendVerificationEmail(newStateAdmin);
 
         await newStateAdmin.save();
         res.status(201).json({ message: 'State admin registered successfully', newStateAdmin });
@@ -59,11 +133,11 @@ const getStateAdminById = async (req, res) => {
     console.log(stateAdminId);
     try {
       const stateAdmin = await StateAdmin.findById(stateAdminId);
-      
+      console.log(stateAdmin);
       if (!stateAdmin) {
         return res.status(404).json({ error: 'State admin not found' });
       }
-      
+      console.log("test......");
       res.status(200).json(stateAdmin); 
     } catch (error) {
       console.error('Error fetching state admin by ID:', error);
