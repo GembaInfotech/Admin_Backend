@@ -1,16 +1,13 @@
-import cors from 'cors';
-import { connect } from './db.js';
-import express from 'express';
-import dotenv from 'dotenv';
+const cors = require('cors');
+const { connect } = require('./db.js');
+const express = require('express');
+const dotenv = require('dotenv');
 dotenv.config();
-import bodyParser from 'body-parser';
-import cookieParser from 'cookie-parser';
-import morgan from 'morgan';
-import { QueriesRoute } from './Router/QueryRoute.js';
-import { cityAdminRoute } from './router/cityAdminRoute.js';
-import { stateAdminRoute } from './router/stateAdminRoute.js';
-import { superAdminRoute } from './router/superAdminRoute.js';
-import { gteRoute } from './router/gteRoute.js';
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
+
+const adminUserRoute = require('./router/adminUserRoute.js')
 
 const app = express();
 
@@ -25,11 +22,7 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 
 connect();
-app.use('/v1/api/queries', QueriesRoute);
-app.use('/v1/api/cityAdmin', cityAdminRoute);
-app.use('/v1/api/stateAdmin', stateAdminRoute);
-app.use('/v1/api/superAdmin', superAdminRoute);
-app.use('/v1/api/gte', gteRoute);
+app.use('/v1/api/adminUser', adminUserRoute);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
