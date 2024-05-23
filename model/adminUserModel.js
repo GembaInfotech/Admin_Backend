@@ -46,7 +46,7 @@ const adminUserSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ['GTE', 'CityAdmin', 'StateAdmin', 'SuperAdmin'],
+      enum: ['gte', 'cityAdmin', 'stateAdmin', 'superAdmin'],
       required:true
     },
     password: {
