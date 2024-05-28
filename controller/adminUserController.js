@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const adminUserModel = require('../model/adminUserModel');
+const bodyParser = require('body-parser');
 
 const jwt = require("jsonwebtoken");
 const AdminUserToken = require('../model/adminUserToken')
@@ -119,44 +120,142 @@ const signin = async (req, res, next) => {
 
 
 const addAdminUser = async (req, res, next) => {
-    try {
-      console.log("start")
-        const {values}  = req.body;
-        console.log(values);
-        
-
-        const existingUser = await adminUserModel.findOne({ email: values.email });
-        if (existingUser) {
-            return res.status(400).json({
-                message: "Email already exists",
-            });
-        }
-
-        const hashedPassword = await bcrypt.hash(values.password, 10);
-        console.log("Password hashed");
-
+  try {
+      console.log("start");
+      // Destructure the required fields directly from req.body
+      const { name, contact, email, address, city, state, pincode, country, regionCode, status, role, password } = req.body;
       
-        const role =  values.role;
+      console.log("req.body:", req.body);
 
-        const newUser = new adminUserModel({
-            ...values,
-            role: role,
-            password: hashedPassword,
-        });
+      // Check if the user already exists
+      const existingUser = await adminUserModel.findOne({ email });
+      if (existingUser) {
+          return res.status(400).json({
+              message: "Email already exists",
+          });
+      }
 
-        await newUser.save();
-        console.log("check")
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      console.log("Password hashed");
 
-        res.status(200).json({
-            data: newUser,
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            message: "Failed to add user",
-        });
-    }
+      // Create a new user
+      const newUser = new adminUserModel({
+          name,
+          contact,
+          email,
+          address,
+          city,
+          state,
+          pincode,
+          country,
+          regionCode,
+          status,
+          role,
+          password: hashedPassword,
+      });
+
+      // Save the new user to the database
+      await newUser.save();
+      console.log("User saved");
+
+      // Respond with the new user data
+      res.status(200).json({
+          data: newUser,
+      });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({
+          message: "Failed to add user",
+      });
+  }
 };
+
+
+const getAdminUser = async (req, res) => {
+  try {
+    const role = req.params.role;
+    const adminUsers = await adminUserModel.find({ role });
+    res.status(200).json({
+       adminUsers
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch admin users",
+    });
+  }
+};
+
+
+const getUser = async (req, res) => {
+  try {
+    
+    const adminUsers = await adminUserModel.find();
+    res.status(200).json({
+       adminUsers
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch admin users",
+    });
+  }
+};
+
+const updateAdminUser = async (req, res, next) => {
+  try {
+    // Get the ID from req.params
+    const { adminId } = req.params;
+    console.log(adminId);
+    console.log(req.body);
+
+    // Destructure the required fields directly from req.body
+    const { name, contact, email, address, city, state, pincode, country, regionCode, status, role, password } = req.body;
+
+    // Check if the user exists
+    const existingUser = await adminUserModel.findById({_id:adminId});
+    if (!existingUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Update user fields
+    existingUser.name = name;
+    existingUser.contact = contact;
+    existingUser.email = email;
+    existingUser.address = address;
+    existingUser.city = city;
+    existingUser.state = state;
+    existingUser.pincode = pincode;
+    existingUser.country = country;
+    existingUser.regionCode = regionCode;
+    existingUser.status = status;
+    existingUser.role = role;
+
+    // If password is provided, hash and update
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      existingUser.password = hashedPassword;
+    }
+
+    // Save the updated user to the database
+    await existingUser.save();
+
+    // Respond with the updated user data
+    res.status(200).json({
+      data: existingUser,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to update user",
+    });
+  }
+};
+
+
 
 const logout = async (req, res) => {
     try {
@@ -185,6 +284,9 @@ const logout = async (req, res) => {
 module.exports = {
     addAdminUser,
     signin,
+    getAdminUser,
+    updateAdminUser,
+    getUser,
     logout
 
 };

@@ -17,7 +17,7 @@ const adminUserSchema = new Schema(
     },
     contact: {
       type: Number,
-      required: true
+      required: false
     },
     address: {
       type: String,
@@ -41,29 +41,33 @@ const adminUserSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['Pending','Active', 'Inactive'],
+      enum: ['Pending', 'Active', 'Inactive'],
       default: 'Pending'
     },
     role: {
       type: String,
       enum: ['gte', 'cityAdmin', 'stateAdmin', 'superAdmin'],
-      required:true
+      required: true
     },
     password: {
       type: String,
       required: true
     },
+    regionCode: {
+      type: String,
+      required: false
+    },
     createdBy: [{
-        id: {
-          type: String
+      id: {
+        type: String
         //   required:true
-        },
-        role: {
-            type: String,
-            enum: ['GTE', 'CityAdmin', 'StateAdmin', 'SuperAdmin'],
-            // required:true
-        }
-      }],
+      },
+      role: {
+        type: String,
+        enum: ['GTE', 'CityAdmin', 'StateAdmin', 'SuperAdmin'],
+        // required:true
+      }
+    }],
     tokens: [{
       reftoken: {
         type: String
@@ -76,8 +80,8 @@ const adminUserSchema = new Schema(
   { timestamps: true }
 );
 
-adminUserSchema.methods.generateRefreshToken = async function(){
-  try{
+adminUserSchema.methods.generateRefreshToken = async function () {
+  try {
     let reftoken = jwt.sign(
       { username: this.uniqueId },
       process.env.JWT_SECRET,
@@ -89,13 +93,13 @@ adminUserSchema.methods.generateRefreshToken = async function(){
     this.tokens = this.tokens.concat({ reftoken, timeStamp });
     await this.save();
     return reftoken;
-  } catch(err){
+  } catch (err) {
     console.log("Error generating refresh token:", err);
   }
 }
 
-adminUserSchema.methods.generateAuthToken = async function(){
-  try{
+adminUserSchema.methods.generateAuthToken = async function () {
+  try {
     let token = jwt.sign(
       { username: this.uniqueId },
       process.env.JWT_SECRET,
@@ -104,7 +108,7 @@ adminUserSchema.methods.generateAuthToken = async function(){
       }
     );
     return token;
-  } catch(err){
+  } catch (err) {
     console.log("Error generating auth token:", err);
   }
 }
