@@ -187,6 +187,21 @@ const getAdminUser = async (req, res) => {
   }
 };
 
+const getAdminUserById= async (req, res) => {
+  try {
+    const adminId = req.params.adminId;
+    const adminUser = await adminUserModel.find({_id:adminId});
+    res.status(200).json({
+       adminUser
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch admin users",
+    });
+  }
+};
+
 
 const getUser = async (req, res) => {
   try {
@@ -287,6 +302,7 @@ module.exports = {
     getAdminUser,
     updateAdminUser,
     getUser,
+    getAdminUserById,
     logout
 
 };
