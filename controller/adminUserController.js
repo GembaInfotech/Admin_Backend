@@ -218,6 +218,32 @@ const getUser = async (req, res) => {
   }
 };
 
+
+const getdata = async (req, res) => {
+  try {
+  
+    const stateAdmin = await adminUserModel.find({role:"stateAdmin"}).count();
+    const cityAdmin = await adminUserModel.find({role:"cityAdmin"}).count();
+    const gte = await adminUserModel.find({role:"gte"}).count();
+  
+    const data ={
+      gte : gte,
+      cityadmin : cityAdmin,
+      stateAdmin: stateAdmin
+    }
+
+   
+    res.status(200).json({
+       data
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch admin users",
+    });
+  }
+};
+
 const updateAdminUser = async (req, res, next) => {
   try {
     // Get the ID from req.params
@@ -302,6 +328,7 @@ module.exports = {
     getAdminUser,
     updateAdminUser,
     getUser,
+    getdata,
     getAdminUserById,
     logout
 
