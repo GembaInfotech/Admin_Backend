@@ -28,8 +28,6 @@ const MESSAGE = {
     LOGOUT_SUCCESS: "Admin user has logged out successfully",
 };
 
-
-
 const signin = async (req, res, next) => {
   console.log("hello");
   console.log(req.body);
