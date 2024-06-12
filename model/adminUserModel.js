@@ -57,17 +57,17 @@ const adminUserSchema = new Schema(
       type: String,
       required: false
     },
-    createdBy: [{
-      id: {
+    createdBy: {
+      // id: {
         type: String
         //   required:true
-      },
-      role: {
-        type: String,
-        enum: ['GTE', 'CityAdmin', 'StateAdmin', 'SuperAdmin'],
-        // required:true
-      }
-    }],
+      // },
+      // role: {
+      //   type: String,
+      //   enum: ['GTE', 'CityAdmin', 'StateAdmin', 'SuperAdmin'],
+      //   // required:true
+      // }
+    },
     tokens: [{
       reftoken: {
         type: String
