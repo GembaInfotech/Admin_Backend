@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const adminUserModel = require('../model/adminUserModel');
 const bodyParser = require('body-parser');
-
+const axios = require('axios');
 const jwt = require("jsonwebtoken");
 const AdminUserToken = require('../model/adminUserToken')
 const { saveLogInfo } = require("../middlewares/logger/logInfo");
@@ -10,22 +10,22 @@ const dayjs = require("dayjs");
 dayjs.extend(duration);
 
 const LOG_TYPE = {
-    SIGN_IN: "sign in",
-    LOGOUT: "logout",
+  SIGN_IN: "sign in",
+  LOGOUT: "logout",
 };
 
 const LEVEL = {
-    INFO: "info",
-    ERROR: "error",
-    WARN: "warn",
+  INFO: "info",
+  ERROR: "error",
+  WARN: "warn",
 };
 
 const MESSAGE = {
-    SIGN_IN_ATTEMPT: "Admin user attempting to sign in",
-    SIGN_IN_ERROR: "Error occurred while signing in admin user: ",
-    INCORRECT_EMAIL: "Incorrect email",
-    INCORRECT_PASSWORD: "Incorrect password",
-    LOGOUT_SUCCESS: "Admin user has logged out successfully",
+  SIGN_IN_ATTEMPT: "Admin user attempting to sign in",
+  SIGN_IN_ERROR: "Error occurred while signing in admin user: ",
+  INCORRECT_EMAIL: "Incorrect email",
+  INCORRECT_PASSWORD: "Incorrect password",
+  LOGOUT_SUCCESS: "Admin user has logged out successfully",
 };
 
 const signin = async (req, res, next) => {
@@ -115,68 +115,217 @@ const signin = async (req, res, next) => {
   }
 };
 
-
-
 const addAdminUser = async (req, res, next) => {
   try {
-      console.log("start");
-      // Destructure the required fields directly from req.body
-      const { name, contact, email, address, city, state, pincode, country, regionCode, status, role, password } = req.body;
-      
-      console.log("req.body:", req.body);
+    console.log("start");
+    const { name, contact, email, address, city, state, pincode, country, regionCode, status, role, password, createdBy } = req.body;
 
-      // Check if the user already exists
-      const existingUser = await adminUserModel.findOne({ email });
-      if (existingUser) {
-          return res.status(400).json({
-              message: "Email already exists",
-          });
-      }
+    console.log("req.body:", req.body);
 
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10);
-      console.log("Password hashed");
-
-      // Create a new user
-      const newUser = new adminUserModel({
-          name,
-          contact,
-          email,
-          address,
-          city,
-          state,
-          pincode,
-          country,
-          regionCode,
-          status,
-          role,
-          password: hashedPassword,
+    const existingUser = await adminUserModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        message: "Email already exists",
       });
+    }
 
-      // Save the new user to the database
-      await newUser.save();
-      console.log("User saved");
+    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("Password hashed");
 
-      // Respond with the new user data
-      res.status(200).json({
-          data: newUser,
-      });
+    const newUser = new adminUserModel({
+      name,
+      contact,
+      email,
+      address,
+      city,
+      state,
+      pincode,
+      country,
+      regionCode,
+      status,
+      role,
+      password: hashedPassword,
+      createdBy
+    });
+
+    await newUser.save();
+    console.log("User saved");
+
+    res.status(200).json({
+      data: newUser,
+    });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({
-          message: "Failed to add user",
-      });
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to add user",
+    });
   }
 };
+
+const VENDOR_API_URL = 'http://localhost:8000/v1/api/vendor/get-all-vendors';
+
+
+const getVendorsForAdmins = async (req, res) => {
+  console.log("Testing...123")
+  const adminId = req.params.adminId;
+
+  const admin = await adminUserModel.find({ _id: adminId })
+  const adminRole = admin[0].role
+
+  if(adminRole === 'superAdmin'){
+    try {
+      const stateAdmins = await adminUserModel.find({ createdBy: adminId, role: 'stateAdmin' });
+      console.log(stateAdmins);
+      const stateAdminIds = stateAdmins.map(stateAdmin => stateAdmin._id);
+  
+      const cityAdmins = await adminUserModel.find({ createdBy: { $in: stateAdminIds }, role: 'cityAdmin' });
+      console.log(cityAdmins);
+      const cityAdminIds = cityAdmins.map(cityAdmin => cityAdmin._id);
+  
+      const gtes = await adminUserModel.find({ createdBy: { $in: cityAdminIds }, role: 'gte' });
+      console.log(gtes);
+      const gteIds = gtes.map(gte => gte._id);
+  
+      const vendorPromises = gteIds.map(gteId =>
+        axios.get(VENDOR_API_URL, { params: { createdBy: gteId } })
+      );
+  
+      const vendorResponses = await Promise.all(vendorPromises);
+      const vendors = vendorResponses.flatMap(response => response.data);
+  
+      res.json(vendors);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  if (adminRole === 'stateAdmin') {
+    try {
+      const cityAdmins = await adminUserModel.find({ createdBy: adminId, role: 'cityAdmin' });
+      console.log(cityAdmins);
+      const cityAdminIds = cityAdmins.map(cityAdmin => cityAdmin._id);
+
+      const gtes = await adminUserModel.find({ createdBy: { $in: cityAdminIds }, role: 'gte' });
+      console.log(gtes);
+      const gteIds = gtes.map(gte => gte._id);
+
+      const vendorPromises = gteIds.map(gteId =>
+        axios.get(VENDOR_API_URL, { params: { createdBy: gteId } })
+      );
+
+      const vendorResponses = await Promise.all(vendorPromises);
+      const vendors = vendorResponses.flatMap(response => response.data);
+
+      res.json(vendors);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  if (adminRole === 'cityAdmin') {
+    try {
+      const gtes = await adminUserModel.find({ createdBy: adminId, role: 'gte' });
+      console.log(gtes);
+      const gteIds = gtes.map(gte => gte._id);
+
+      const vendorPromises = gteIds.map(gteId =>
+        axios.get(VENDOR_API_URL, { params: { createdBy: gteId } })
+      );
+
+      const vendorResponses = await Promise.all(vendorPromises);
+      const vendors = vendorResponses.flatMap(response => response.data);
+
+      res.json(vendors);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+}
+
+const getVendorsForStateAdmins = async (req, res) => {
+  console.log("Testing...123");
+  const stateAdminId = req.params.stateAdminId;
+  console.log(stateAdminId);
+
+  try {
+    // Fetch all cityAdmins created by the stateAdmin
+    const cityAdmins = await adminUserModel.find({ createdBy: stateAdminId, role: 'cityAdmin' });
+    console.log(cityAdmins);
+    const cityAdminIds = cityAdmins.map(cityAdmin => cityAdmin._id);
+
+    // Fetch all GTEs created by each cityAdmin
+    const gtes = await adminUserModel.find({ createdBy: { $in: cityAdminIds }, role: 'gte' });
+    console.log(gtes);
+    const gteIds = gtes.map(gte => gte._id);
+
+    // Fetch vendors for each GTE
+    const vendorPromises = gteIds.map(gteId =>
+      axios.get(VENDOR_API_URL, { params: { createdBy: gteId } })
+    );
+
+    const vendorResponses = await Promise.all(vendorPromises);
+    const vendors = vendorResponses.flatMap(response => response.data);
+
+    res.json(vendors);
+  } catch (error) {
+    console.error('Error fetching vendors:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 
 
 const getAdminUser = async (req, res) => {
   try {
     const role = req.params.role;
-    const adminUsers = await adminUserModel.find({ role });
-    res.status(200).json({
-       adminUsers
-    });
+    const id = req.params.id;
+    const admin = await adminUserModel.find({ _id: id })
+    const adminRole = admin[0].role
+    console.log(adminRole);
+
+    if (adminRole === "superAdmin" && role === "cityAdmin") {
+      const adminUsers = await adminUserModel.find({ role });
+      res.status(200).json({
+        adminUsers
+      });
+    }
+
+
+
+
+    if (adminRole === "superAdmin" && role === "gte") {
+      const adminUsers = await adminUserModel.find({ role });
+      res.status(200).json({
+        adminUsers
+      });
+    }
+
+    if (adminRole === "stateAdmin" && role === "gte") {
+      try {
+        const cityAdmins = await adminUserModel.find({ createdBy: id, role: 'cityAdmin' });
+        console.log(cityAdmins);
+        const cityAdminIds = cityAdmins.map(cityAdmin => cityAdmin._id);
+
+        const adminUsers = await adminUserModel.find({ createdBy: { $in: cityAdminIds }, role: role });
+
+        res.status(200).json({
+          adminUsers
+        });
+      } catch (error) {
+        console.error('Error fetching GTEs:', error);
+        res.status(500).json({ error: error.message });
+      }
+    }
+
+    if ((adminRole === "superAdmin" && role === "stateAdmin") || (adminRole === "stateAdmin" && role === "cityAdmin") || (adminRole === "cityAdmin" && role === "gte")) {
+      console.log("hello");
+      const adminUsers = await adminUserModel.find({ role, createdBy: id });
+      res.status(200).json({
+        adminUsers
+      });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -185,12 +334,12 @@ const getAdminUser = async (req, res) => {
   }
 };
 
-const getAdminUserById= async (req, res) => {
+const getAdminUserById = async (req, res) => {
   try {
     const adminId = req.params.adminId;
-    const adminUser = await adminUserModel.find({_id:adminId});
+    const adminUser = await adminUserModel.find({ _id: adminId });
     res.status(200).json({
-       adminUser
+      adminUser
     });
   } catch (error) {
     console.error(error);
@@ -203,10 +352,10 @@ const getAdminUserById= async (req, res) => {
 
 const getUser = async (req, res) => {
   try {
-    
+
     const adminUsers = await adminUserModel.find();
     res.status(200).json({
-       adminUsers
+      adminUsers
     });
   } catch (error) {
     console.error(error);
@@ -219,20 +368,20 @@ const getUser = async (req, res) => {
 
 const getdata = async (req, res) => {
   try {
-  
-    const stateAdmin = await adminUserModel.find({role:"stateAdmin"}).count();
-    const cityAdmin = await adminUserModel.find({role:"cityAdmin"}).count();
-    const gte = await adminUserModel.find({role:"gte"}).count();
-  
-    const data ={
-      gte : gte,
-      cityadmin : cityAdmin,
+
+    const stateAdmin = await adminUserModel.find({ role: "stateAdmin" }).count();
+    const cityAdmin = await adminUserModel.find({ role: "cityAdmin" }).count();
+    const gte = await adminUserModel.find({ role: "gte" }).count();
+
+    const data = {
+      gte: gte,
+      cityadmin: cityAdmin,
       stateAdmin: stateAdmin
     }
 
-   
+
     res.status(200).json({
-       data
+      data
     });
   } catch (error) {
     console.error(error);
@@ -253,7 +402,7 @@ const updateAdminUser = async (req, res, next) => {
     const { name, contact, email, address, city, state, pincode, country, regionCode, status, role, password } = req.body;
 
     // Check if the user exists
-    const existingUser = await adminUserModel.findById({_id:adminId});
+    const existingUser = await adminUserModel.findById({ _id: adminId });
     if (!existingUser) {
       return res.status(404).json({
         message: "User not found",
@@ -297,37 +446,39 @@ const updateAdminUser = async (req, res, next) => {
 
 
 const logout = async (req, res) => {
-    try {
-      const refreshToken = req.headers.authorization?.split(" ")[1] ?? null;
-      console.log(req.headers.authorization);
-      if (refreshToken) {
-        await adminUserToken.deleteOne({ refreshToken });
-        await saveLogInfo(
-          null,
-          MESSAGE.LOGOUT_SUCCESS,
-          LOG_TYPE.LOGOUT,
-          LEVEL.INFO
-        );
-      }
-      res.status(200).json({
-        message: "Admin User Logout successful",
-      });
-    } catch (err) {
-      await saveLogInfo(null, err.message, LOG_TYPE.LOGOUT, LEVEL.ERROR);
-      res.status(500).json({
-        message: "Internal server error. Please try again later.",
-      });
+  try {
+    const refreshToken = req.headers.authorization?.split(" ")[1] ?? null;
+    console.log(req.headers.authorization);
+    if (refreshToken) {
+      await adminUserToken.deleteOne({ refreshToken });
+      await saveLogInfo(
+        null,
+        MESSAGE.LOGOUT_SUCCESS,
+        LOG_TYPE.LOGOUT,
+        LEVEL.INFO
+      );
     }
-  };
+    res.status(200).json({
+      message: "Admin User Logout successful",
+    });
+  } catch (err) {
+    await saveLogInfo(null, err.message, LOG_TYPE.LOGOUT, LEVEL.ERROR);
+    res.status(500).json({
+      message: "Internal server error. Please try again later.",
+    });
+  }
+};
 
 module.exports = {
-    addAdminUser,
-    signin,
-    getAdminUser,
-    updateAdminUser,
-    getUser,
-    getdata,
-    getAdminUserById,
-    logout
+  addAdminUser,
+  signin,
+  getAdminUser,
+  getVendorsForAdmins,
+  getVendorsForStateAdmins,
+  updateAdminUser,
+  getUser,
+  getdata,
+  getAdminUserById,
+  logout
 
 };
