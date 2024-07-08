@@ -1,10 +1,12 @@
 const router = require("express").Router();
 const Auth = require('../middlewares/auth/authorizeRoles')
 
-const {addAdminUser, signin, getAdminUser, updateAdminUser, getUser,getdata, getAdminUserById,getVendorsForAdmins,getVendorsForStateAdmins, logout} = require("../controller/adminUserController");
+const {addAdminUser, signin, getAdminUser, updateAdminUser, getUser,getdata, getAdminUserById,getVendorsForAdmins,getParkingsForAdmins, logout} = require("../controller/adminUserController");
 router.post("/signup",addAdminUser);
 router.post("/signin",signin);
 router.get("/get-vendors/:adminId", getVendorsForAdmins);
+router.get("/parking/pending/:adminId", getParkingsForAdmins);
+
 
 
 
