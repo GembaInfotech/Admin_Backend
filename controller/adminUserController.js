@@ -318,6 +318,26 @@ console.log(adminId);
     });
   }
 };
+const BOOKING_API_URL = "http://localhost:8000/v1/api/booking/getBookingsByParkingId"
+
+const getBookingsByParkingId = async (req, res) => {
+  const { parkingId } = req.params;
+  console.log(parkingId); 
+  try {
+    const response = await axios.get(BOOKING_API_URL, { params: { parking: parkingId } });
+    console.log(response.data);
+    
+    res.json(response.data);
+
+  } catch (error) {
+    console.error('Error fetching Bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch Bookings',
+      error: error.message
+    });
+  }
+};
 
 const getAdminUser = async (req, res) => {
   try {
@@ -510,6 +530,7 @@ module.exports = {
   getAdminUser,
   getVendorsForAdmins,
   getParkingsForAdmins,
+  getBookingsByParkingId,
   updateAdminUser,
   getUser,
   getdata,
