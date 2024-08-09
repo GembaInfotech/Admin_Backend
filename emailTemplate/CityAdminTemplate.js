@@ -19,3 +19,5 @@ const CityAdminTemplate = `<!DOCTYPE html>
 </html>`;
 
 export default CityAdminTemplate;
+
+

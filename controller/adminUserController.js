@@ -162,7 +162,7 @@ const addAdminUser = async (req, res, next) => {
   }
 };
 
-const VENDOR_API_URL = 'http://localhost:8000/v1/api/vendor/get-all-vendors';
+const VENDOR_API_URL = 'http://localhost:3456/v1/api/vendor/get-all-vendors';
 
 const getVendorsForAdmins = async (req, res) => {
   console.log("Testing...123")
@@ -243,7 +243,7 @@ const getVendorsForAdmins = async (req, res) => {
   }
 }
 
-const PARKING_API_URL = 'http://localhost:8000/v1/api/parking/pending';
+const PARKING_API_URL = 'http://localhost:3456/v1/api/parking/pending';
 
 const getParkingsForAdmins = async (req, res) => {
   const { adminId } = req.params;
@@ -318,7 +318,7 @@ console.log(adminId);
     });
   }
 };
-const BOOKING_API_URL = "http://localhost:8000/v1/api/booking/getBookingsByParkingId"
+const BOOKING_API_URL = "http://localhost:3456/v1/api/booking/getBookingsByParkingId"
 
 const getBookingsByParkingId = async (req, res) => {
   const { parkingId } = req.params;
