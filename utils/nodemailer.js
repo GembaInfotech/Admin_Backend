@@ -1,18 +1,17 @@
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-      user: "ayushguptass14@gmail.com",
-      pass: "itcyffmwyptpjhbt",
-    },
-  });
+  service: process.env.EMAIL_SERVICE,
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
 
 function sendVerificationEmail(Admin, emailTemplate) {
-    console.log("dfhbhjfbghj.....");
     console.log(Admin);
     const mailOptions = {
-      from: "ayushguptass14@gmail.com",
+      from: process.env.EMAIL,
       to: Admin.mail,
       subject: "Parkar-Verify Your Email",
       html: emailTemplate,

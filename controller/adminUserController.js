@@ -243,10 +243,10 @@ const getVendorsForAdmins = async (req, res) => {
   }
 }
 
-const PARKING_API_URL = 'http://localhost:3456/v1/api/parking/pending';
+const PARKING_API_URL = 'http://localhost:3456/v1/api/parking/getParkingByVendorIdAndStatus';
 
 const getParkingsForAdmins = async (req, res) => {
-  const { adminId } = req.params;
+  const { adminId, status } = req.params;
 console.log(adminId);
   try {
     const admin = await adminUserModel.findById(adminId);
@@ -302,11 +302,14 @@ console.log(adminId);
     console.log("vendorid....", vendorIds);
 
     const parkingPromises = vendorIds.map(vendorId =>
-      axios.get(PARKING_API_URL, { params: { vendor_id:vendorId } })
+      axios.get(PARKING_API_URL, { params: { vendor_id: vendorId, status } })
     );
 
     const parkingResponses = await Promise.all(parkingPromises);
     const parkings = parkingResponses.flatMap(response => response.data);
+
+    console.log(parkings);
+    
 
     res.json(parkings);
   } catch (error) {

@@ -5,7 +5,7 @@ const {addAdminUser, signin, getAdminUser, updateAdminUser, getUser,getdata, get
 router.post("/signup",addAdminUser);
 router.post("/signin",signin);
 router.get("/get-vendors/:adminId", getVendorsForAdmins);
-router.get("/parking/pending/:adminId", getParkingsForAdmins);
+router.get("/parking/getParkings/:adminId/:status", getParkingsForAdmins);
 
 router.get("/get-admin-users/:role/:id",getAdminUser);
 router.get("/get-admin-user/:adminId", getAdminUserById);
