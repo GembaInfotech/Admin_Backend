@@ -423,17 +423,15 @@ const getUser = async (req, res) => {
 
 const getdata = async (req, res) => {
   try {
-
-    const stateAdmin = await adminUserModel.find({ role: "stateAdmin" }).count();
-    const cityAdmin = await adminUserModel.find({ role: "cityAdmin" }).count();
-    const gte = await adminUserModel.find({ role: "gte" }).count();
+    const stateAdmin = await adminUserModel.countDocuments({ role: "stateAdmin" });
+    const cityAdmin = await adminUserModel.countDocuments({ role: "cityAdmin" });
+    const gte = await adminUserModel.countDocuments({ role: "gte" });
 
     const data = {
       gte: gte,
       cityadmin: cityAdmin,
       stateAdmin: stateAdmin
-    }
-
+    };
 
     res.status(200).json({
       data
@@ -445,6 +443,7 @@ const getdata = async (req, res) => {
     });
   }
 };
+
 
 const updateAdminUser = async (req, res, next) => {
   try {
