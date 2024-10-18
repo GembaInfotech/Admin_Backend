@@ -242,7 +242,7 @@ const getVendorsForAdmins = async (req, res) => {
   }
 }
 
-const PARKING_API_URL = 'http://localhost:3456/v1/api/parking/getParkingByVendorIdAndStatus';
+const PARKING_API_URL = 'http://192.168.1.10:3456/v1/api/parking/getParkingByVendorIdAndStatus';
 
 const getParkingsForAdmins = async (req, res) => {
   const { adminId, status } = req.params;
@@ -316,7 +316,7 @@ console.log(adminId);
     });
   }
 };
-const BOOKING_API_URL = "http://localhost:3456/v1/api/booking/getBookingsByParkingId"
+const BOOKING_API_URL = "http://192.168.1.10:3456/v1/api/booking/getBookingsByParkingId"
 
 const getBookingsByParkingId = async (req, res) => {
   const { parkingId } = req.params;
