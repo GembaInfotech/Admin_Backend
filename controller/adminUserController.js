@@ -118,7 +118,7 @@ const signin = async (req, res, next) => {
 const addAdminUser = async (req, res, next) => {
   try {
     console.log("start");
-    const { name, contact, email, address, city, state, pincode, country, regionCode, status, role, password, createdBy } = req.body;
+    const { name, contact, email, address, city, state, pincode, country, status, role, password, createdBy } = req.body;
 
     console.log("req.body:", req.body);
 
@@ -141,7 +141,6 @@ const addAdminUser = async (req, res, next) => {
       state,
       pincode,
       country,
-      regionCode,
       status,
       role,
       password: hashedPassword,
@@ -300,17 +299,13 @@ console.log(adminId);
     const vendorResponses = await Promise.all(vendorPromises);
     const vendorIds = vendorResponses.flatMap(response => response.data.map(vendor => vendor._id));
     console.log("vendorid....", vendorIds);
-
     const parkingPromises = vendorIds.map(vendorId =>
       axios.get(PARKING_API_URL, { params: { vendor_id: vendorId, status } })
     );
 
     const parkingResponses = await Promise.all(parkingPromises);
     const parkings = parkingResponses.flatMap(response => response.data);
-
     console.log(parkings);
-    
-
     res.json(parkings);
   } catch (error) {
     console.error('Error fetching parkings:', error);
