@@ -161,88 +161,87 @@ const addAdminUser = async (req, res, next) => {
   }
 };
 
-const VENDOR_API_URL = 'http://localhost:3456/v1/api/vendor/get-all-vendors';
-
+const VENDOR_API_URL = 'http://localhost:3456/v1/api/vendor/get-all-vendor';
 const getVendorsForAdmins = async (req, res) => {
-  console.log("Testing...123")
+  console.log("Testing...123");
   const adminId = req.params.adminId;
 
-  const admin = await adminUserModel.find({ _id: adminId })
-  const adminRole = admin[0].role
+  try {
+    const admin = await adminUserModel.findById(adminId);
+    const adminRole = admin.role;
 
-  if (adminRole === 'superAdmin') {
-    try {
+    if (adminRole === 'superAdmin') {
+      // Fetch stateAdmins created by superAdmin
       const stateAdmins = await adminUserModel.find({ createdBy: adminId, role: 'stateAdmin' });
-      console.log(stateAdmins);
       const stateAdminIds = stateAdmins.map(stateAdmin => stateAdmin._id);
 
+      // Fetch cityAdmins created by stateAdmins
       const cityAdmins = await adminUserModel.find({ createdBy: { $in: stateAdminIds }, role: 'cityAdmin' });
-      console.log(cityAdmins);
       const cityAdminIds = cityAdmins.map(cityAdmin => cityAdmin._id);
 
+      // Fetch GTEs created by cityAdmins
       const gtes = await adminUserModel.find({ createdBy: { $in: cityAdminIds }, role: 'gte' });
-      console.log(gtes);
       const gteIds = gtes.map(gte => gte._id);
 
+      // Fetch vendors created by GTEs
       const vendorPromises = gteIds.map(gteId =>
         axios.get(VENDOR_API_URL, { params: { createdBy: gteId } })
       );
-
       const vendorResponses = await Promise.all(vendorPromises);
       const vendors = vendorResponses.flatMap(response => response.data);
 
       res.json(vendors);
-    } catch (error) {
-      console.error('Error fetching vendors:', error);
-      res.status(500).json({ error: error.message });
     }
-  }
 
-  if (adminRole === 'stateAdmin') {
-    try {
+    if (adminRole === 'stateAdmin') {
+      // Fetch cityAdmins created by stateAdmin
       const cityAdmins = await adminUserModel.find({ createdBy: adminId, role: 'cityAdmin' });
-      console.log(cityAdmins);
       const cityAdminIds = cityAdmins.map(cityAdmin => cityAdmin._id);
 
+      // Fetch GTEs created by cityAdmins
       const gtes = await adminUserModel.find({ createdBy: { $in: cityAdminIds }, role: 'gte' });
-      console.log(gtes);
       const gteIds = gtes.map(gte => gte._id);
 
+      // Fetch vendors created by GTEs
       const vendorPromises = gteIds.map(gteId =>
         axios.get(VENDOR_API_URL, { params: { createdBy: gteId } })
       );
-
       const vendorResponses = await Promise.all(vendorPromises);
       const vendors = vendorResponses.flatMap(response => response.data);
 
       res.json(vendors);
-    } catch (error) {
-      console.error('Error fetching vendors:', error);
-      res.status(500).json({ error: error.message });
     }
-  }
 
-  if (adminRole === 'cityAdmin') {
-    try {
+    if (adminRole === 'cityAdmin') {
+      // Fetch GTEs created by cityAdmin
       const gtes = await adminUserModel.find({ createdBy: adminId, role: 'gte' });
-      console.log(gtes);
       const gteIds = gtes.map(gte => gte._id);
 
+      // Fetch vendors created by GTEs
       const vendorPromises = gteIds.map(gteId =>
         axios.get(VENDOR_API_URL, { params: { createdBy: gteId } })
       );
-
       const vendorResponses = await Promise.all(vendorPromises);
       const vendors = vendorResponses.flatMap(response => response.data);
 
       res.json(vendors);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
     }
-  }
-}
 
-const PARKING_API_URL = 'http://192.168.1.10:3456/v1/api/parking/getParkingByVendorIdAndStatus';
+    if (adminRole === 'gte') {
+      // Fetch vendors created by the GTE directly
+      const vendorResponse = await axios.get(VENDOR_API_URL, { params: { createdBy: adminId } });
+      const vendors = vendorResponse.data;
+
+      res.json(vendors);
+    }
+  } catch (error) {
+    console.error('Error fetching vendors:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+const PARKING_API_URL = 'http://localhost:3456/v1/api/parking/getParkingByVendorIdAndStatus';
 
 const getParkingsForAdmins = async (req, res) => {
   const { adminId, status } = req.params;
@@ -316,7 +315,7 @@ console.log(adminId);
     });
   }
 };
-const BOOKING_API_URL = "http://192.168.1.10:3456/v1/api/booking/getBookingsByParkingId"
+const BOOKING_API_URL = "http://localhost:3456/v1/api/booking/getBookingsByParkingId"
 
 const getBookingsByParkingId = async (req, res) => {
   const { parkingId } = req.params;
@@ -341,48 +340,63 @@ const getAdminUser = async (req, res) => {
   try {
     const role = req.params.role;
     const id = req.params.id;
-    const admin = await adminUserModel.find({ _id: id })
-    const adminRole = admin[0].role
+    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+    const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page
+    const skip = (page - 1) * limit; // Calculate how many records to skip
+
+    const admin = await adminUserModel.find({ _id: id });
+    const adminRole = admin[0].role;
     console.log(adminRole);
 
-    if (adminRole === "superAdmin" && role === "cityAdmin") {
-      const adminUsers = await adminUserModel.find({ role });
-      res.status(200).json({
-        adminUsers
-      });
+    let adminUsers;
+
+    // SuperAdmin fetching cityAdmins or GTEs
+    if (adminRole === "superAdmin" && (role === "cityAdmin" || role === "gte")) {
+      adminUsers = await adminUserModel
+        .find({ role })
+        .skip(skip)
+        .limit(limit);
     }
 
-    if (adminRole === "superAdmin" && role === "gte") {
-      const adminUsers = await adminUserModel.find({ role });
-      res.status(200).json({
-        adminUsers
-      });
-    }
-
-    if (adminRole === "stateAdmin" && role === "gte") {
+    // StateAdmin fetching GTEs
+    else if (adminRole === "stateAdmin" && role === "gte") {
       try {
         const cityAdmins = await adminUserModel.find({ createdBy: id, role: 'cityAdmin' });
-        console.log(cityAdmins);
         const cityAdminIds = cityAdmins.map(cityAdmin => cityAdmin._id);
-
-        const adminUsers = await adminUserModel.find({ createdBy: { $in: cityAdminIds }, role: role });
-
-        res.status(200).json({
-          adminUsers
-        });
+        
+        adminUsers = await adminUserModel
+          .find({ createdBy: { $in: cityAdminIds }, role })
+          .skip(skip)
+          .limit(limit);
       } catch (error) {
         console.error('Error fetching GTEs:', error);
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
       }
     }
 
-    if ((adminRole === "superAdmin" && role === "stateAdmin") || (adminRole === "stateAdmin" && role === "cityAdmin") || (adminRole === "cityAdmin" && role === "gte")) {
-      console.log("hello");
-      const adminUsers = await adminUserModel.find({ role, createdBy: id });
-      res.status(200).json({
-        adminUsers
-      });
+    // Generic fetching for other role relations
+    else if (
+      (adminRole === "superAdmin" && role === "stateAdmin") ||
+      (adminRole === "stateAdmin" && role === "cityAdmin") ||
+      (adminRole === "cityAdmin" && role === "gte")
+    ) {
+      adminUsers = await adminUserModel
+        .find({ role, createdBy: id })
+        .skip(skip)
+        .limit(limit);
     }
+
+    // Total count for pagination
+    const totalCount = await adminUserModel.countDocuments({ role });
+
+    // Send response with pagination metadata
+    res.status(200).json({
+      adminUsers,
+      totalPages: Math.ceil(totalCount / limit), // Calculate total pages
+      currentPage: page,
+      totalUsers: totalCount,
+    });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -390,6 +404,7 @@ const getAdminUser = async (req, res) => {
     });
   }
 };
+
 
 const getAdminUserById = async (req, res) => {
   try {
